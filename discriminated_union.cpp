@@ -300,9 +300,7 @@ struct CopyFromStorage<TypeList<H,xs>> : public CopyFromStorage<xs>
     template <typename DUT>
     static void copy(const DUT& src, DUT& dest,uint8_t target_type)
     {
-        // uint8_t type = IndexInTypeList<H,ORG_TL>::value;
         if(target_type == 0){
-        // if(type == target_type){
             dest.set(src.template get<H>());
         }else{
             CopyFromStorage<xs>::copy(src,dest,--target_type);
@@ -394,10 +392,8 @@ struct GenericPrintVisitor<TypeList<H,xs>> : public GenericPrintVisitor<xs>
     using GenericPrintVisitor<xs>::stream;
     GenericPrintVisitor(std::ostream& stream):GenericPrintVisitor<xs>(stream)
     {}
-    // using ReturnType = void;
     using GenericPrintVisitor<xs>::visit;
     void visit(H& val){
-        // std::cout << val;
         stream << val;
     }
 };
@@ -705,6 +701,7 @@ int main()
     vect.push_back(du2); 
 
     // // // // CalcVisitor cv;
+    vect.push_back(du);
     // // // // AddVisitor av;
     // // // // apply_visitor(PrintVisitor(),du3);
     for(const auto& item : vect){
