@@ -59,14 +59,12 @@ template <typename H, typename xs,uint8_t size>
 struct RemoveFromListImpl<TypeList<H,xs>,size,true>
 {
     enum { reject = sizeof(typename Head<xs>::type) > size};
-    // enum { reject = SizeOf<typename Head<xs>::type>::value > size};
     using result = typename RemoveFromListImpl<xs, size, reject>::result;
 };
 template <typename H, typename xs,uint8_t size>
 struct RemoveFromListImpl<TypeList<H,xs>,size,false>
 {
     enum { reject = sizeof(typename Head<xs>::type) > size};
-    // enum { reject = SizeOf<typename Head<xs>::type>::value > size};
     using temp = typename RemoveFromListImpl<xs,size,reject>::result;
     using result = TypeList<H, temp>;
 };
@@ -128,9 +126,6 @@ struct MaxSizeType{
     using type = typename TypeWithSize<TL,max_size>::type;
 }; 
 
-using TL = CreateTypeList<char,short,int*,int,bool>::type;
-// using T = typename TypeWithSize<TL,6>::type;
-using T = typename MaxSizeType<TL>::type;
 // this creates a union that has the head of a typelist
 // along with and Align type of the next rest of the list
 // so you get a cascading set of unions
@@ -323,31 +318,6 @@ struct CopyFromStorage<NullType>
 
     }
 };
-// template <typename T> struct GenericGet;
-// template <typename H, typename xs>
-// struct GenericGet<TypeList<H,xs>> : public GenericGet<xs>
-// {
-//     template<typename V, typename Z, typename ReturnType = typename V::ReturnType>
-//     static H Go(V& visitor, const Z& du){
-//         uint8_t type = IndexInTypeList<H,typename Z::TList>::value;
-//         if(type == du.type()){
-//             return visitor.visit(du.template get<H>());
-//         }else{
-//             return GenericGet<xs>::Go(visitor,du);
-//         }
-//     }
-// };
-
-// template<>
-// struct GenericGet<NullType>
-// {
-//     template<typename V, typename Z, typename ReturnType = typename V::ReturnType>
-//     static ReturnType Go(V& visitor,const Z& du){
-//         std::cout << "Handle NullType" << std::endl;
-//         return ReturnType();
-//     }
-// };
-
 
 template <typename T> struct DoVisit;
 template <typename H, typename xs>
@@ -431,8 +401,6 @@ struct GenericPrintVisitor<TypeList<H,xs>> : public GenericPrintVisitor<xs>
         stream << val;
     }
 };
-// template <typename H> 
-// struct GenericPrintVisitor<TypeList<H,NullType>> : public Visitor<void>
 template<>
 struct GenericPrintVisitor<NullType> : public Visitor<void>
 {
@@ -440,12 +408,7 @@ struct GenericPrintVisitor<NullType> : public Visitor<void>
     GenericPrintVisitor(std::ostream& stream):stream(stream)
     {}
     void visit(NullType& );
-    // using ReturnType = void;
-    // void visit(H& val)
-    // {
-        // stream << val;
-        // std::cout << val;
-    // }
+    using ReturnType = void;
 };
 
 template <typename DU, typename T,typename ORG_TL> struct ConversionCasts;
@@ -486,21 +449,17 @@ public:
     using TList = TL;
     template <typename T, typename = typename std::enable_if<InTypeList<T,TList>::value>::type>
     DUnion (T&& val):ConversionCasts<DUnion<TList>, TList, TList>(this),moved(false)
-    // DUnion (T& val):ConversionCasts<DUnion<TList>, TList, TList>(this),moved(false)
     {
-        // set(std::forward<T>(val));
         set(val);
     }
     DUnion (const DUnion<TList>& obj):ConversionCasts<DUnion<TList>,TList,TList >(this),moved(false)
     {
-        std::cout << "copying" << std::endl;
         type_ = obj.type_;
         copy = obj.copy;
         copy(obj,*this);
     }
     DUnion<TList>& operator=(DUnion<TList>& obj)
     {
-        std::cout << "copy assignment" << std::endl;
         type_ = obj.type_;
         copy = obj.copy;
         copy(obj,*this);
@@ -554,16 +513,12 @@ public:
         copy = &CopyStorage<T>::copy;
 
         new (storage) T(val); // construct an object of type T, passing val to it's constructor
-        // new (storage) T(std::move(val)); // construct an object of type T, passing val to it's constructor
-                              // and construct it in the space pointed by storage, using the fact
-                              // array names decay to pointers
     }
     template <typename T, typename = typename std::enable_if<InTypeList<T,TList>::value>::type>
     void set(const T&& val){
         type_ = IndexInTypeList<T,TList>::value;
         copy = &CopyStorage<T>::copy;
 
-        // new (storage) T(std::move(val)); // construct an object of type T, passing val to it's constructor
         new (storage) T(val); // construct an object of type T, passing val to it's constructor
                               // and construct it in the space pointed by storage, using the fact
                               // array names decay to pointers
@@ -571,9 +526,6 @@ public:
     template <typename Z, typename = typename std::enable_if<InTypeList<Z,TList>::value>::type>
     Z& get() const {
         return *(reinterpret_cast<Z*>(const_cast<uint8_t*>(storage)));
-        // Z ret;
-        // std::memcpy(&ret, this->storage, sizeof(Z));
-        // // return ret;
     }
     inline uint8_t type() const { return type_; }
 private:
@@ -648,12 +600,6 @@ struct my_str : public std::string
         std::cout << "move assigning " << std::endl;
         return *this;
     }
-    // my_str& operator=(my_str&& obj)
-    // {
-    //     num = cnt++;
-    //     *this = obj;
-    //     std::cout << "my_str move assignment " << num << std::endl;
-    // }
     ~my_str(){
         std::cout << "my str destructor " << num <<  std::endl;
     }
@@ -746,110 +692,23 @@ struct MyStruct
 };
 int MyStruct::i = 0;
 
-void* (*old_new)(size_t) = operator new;
-void * operator new(size_t size)
-{
-    std::cout<< "Overloading new operator with size: " << size << std::endl;
-    // void * p = ::operator new(size); 
-    // void * p = old_new(size); 
-    void * p = malloc(size); 
-    return p;
-}
-
-void * operator new[](size_t size)
-{
-    std::cout<< "Overloading new[] operator with size: " << size << std::endl;
-    // void * p = ::operator new(size); 
-    // void * p = old_new(size); 
-    void * p = malloc(size); 
-    return p;
-}
-
-void operator delete(void * p)
-{
-    std::cout << "Delete operator overloading " << std::endl;
-    free(p);
-}
-void operator delete[](void * p)
-{
-    std::cout << "Delete [] operator overloading " << std::endl;
-    free(p);
-}
 int main()
 {
-    using TL = CreateTypeList<char, double, my_str>::type;
-    // uint8_t* ptr = new uint8_t[sizeof(std::string)];
-    // alignas(std::string) uint8_t array[sizeof(std::string)];
-    // new (ptr) std::string("hello world");
-    // // new (array) std::string("hello world");
-    // std::memcpy(array,ptr,sizeof(std::string));
-    // std::memset(ptr,0,sizeof(std::string));
-    // delete [] ptr;
-    // // my_str* optr = reinterpret_cast<std::string*>(ptr);
-    // std::string* optr = reinterpret_cast<std::string*>(&array[0]);
-    // std::cout << *optr << std::endl;
-    // using string = std::string;
-    // optr->~string();
-    
-    // using TL = CreateTypeList<char, double, std::string>::type;
-    DUnion<TL> du(my_str("Hi World"));
-    // DUnion<TL> du('a');
-    // DUnion<TL> du(std::string("Hi World"));
-    // DUnion<TL> du2('a');
-    DUnion<TL> du2 = std::move(du);
-    // DUnion<TL> du2 = du;
-    // // du2 = std::move(du);
-    std::cout << du2 << std::endl;
+    using TL = CreateTypeList<char, double, std::string>::type;
+    DUnion<TL> du(std::string("Hi World"));
+    DUnion<TL> du2(3.14);
 
-    // // DUnion<TL> du2(27.7);
-    // DUnion<TL> du3(my_str("Hello World"));
     std::vector<DUnion<TL>> vect;
-    vect.reserve(10);
-    // // // vect.emplace_back<my_str>("Hello World");
-    vect.push_back(DUnion<TL>(my_str("Hello World2")));
-    // vect.push_back(std::move(DUnion<TL>(std::string("Hello World3"))));
+    vect.push_back(DUnion<TL>(std::string("Hello World2")));
     vect.push_back(DUnion<TL>('a'));
     vect.push_back(du); 
+    vect.push_back(du2); 
 
-    // // vect.push_back(DUnion<TL>(std::string("Hello World")));
-    // // vect.push_back(DUnion<TL>(27.3));
-    // // vect.push_back(std::move(du));
-    // // vect.push_back(du2);
-    // // vect.push_back(du3);
-    // // // du3.set(7.7);
-    // // // du3 = 3.14;
-    // // // vect.push_back(std::move(du3));
-    // // // PrintVisitor pv;
     // // // // CalcVisitor cv;
     // // // // AddVisitor av;
     // // // // apply_visitor(PrintVisitor(),du3);
-    // for(const auto& item : vect){
-    //     std::cout << item << std::endl;
-    // //     // apply_visitor(PrintVisitor(),item);
-    // //     // apply_visitor(pv,item);
-    // //     // auto x = apply_visitor(CalcVisitor(),item);
-    // //     // std::cout << x << std::endl;
-    // //     // std::cout << apply_visitor(CalcVisitor(),item) << std::endl;
-    // //     // std::cout << apply_visitor(cv,item) << std::endl;
-    // //     // std::cout << apply_visitor(av,item) << std::endl;
-    // }
-
-    // // std::cout << du3 << std::endl;
-
-    // // double uu  = 1.2;
-    // // du3 = 'j';
-    // // // du3 = my_str("Hello");
-    // // du3 = 29.8;
-    // // foo(du3);
-    // // std::cout << sizeof(du3) << " " << sizeof(my_str) << " " << du3 << std::endl;
-    // // vect.emplace_back(static_cast<my_str>("Hello World"));
-    // // std::cout << vect.at(vect.size()-1) << std::endl;
-    // // du2 = du3;
-    // // DUnion<TL> d5(du3);
-    // // my_str m("Hello World");
-    // // std::cout << du2 << " " << du3 << std::endl;
-    // // std::cout << du << std::endl;
-    // // foo();
-    // std::cout << "yo" << std::endl;
+    for(const auto& item : vect){
+        apply_visitor(PrintVisitor(),item);
+    }
     return 0;
 }
