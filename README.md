@@ -11,12 +11,14 @@ DUnion<TL> du2(5); // as long as the list of types is the same then du and d2 ar
 // effectively creating a heterogenious collection
 // This is useful where we can't modify the classes, or don't want to make them have a common base class.
 // It's a form of type erasure.
+
 std::vector<DUnion<TL>> vect;
 vect.push_back(du);
 vect.push_back(du2);
 
 // we can interate the list and do operations using the visitor pattern
 // see the code for the visit iterator
+
 for(const auto& item : vect){
   apply_visitor(PrintVisitor(),item);
 }
